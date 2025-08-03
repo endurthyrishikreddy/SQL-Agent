@@ -68,6 +68,14 @@ class SQLAgent:
             
             schema_text += "\n"
         
+        # Add relationship hints if multiple tables
+        if len(self.schema) > 1:
+            schema_text += "RELATIONSHIP HINTS:\n"
+            schema_text += "- When joining tables, look for common column names (like 'id', 'customer_id', etc.)\n"
+            schema_text += "- Use appropriate JOIN types (INNER, LEFT, RIGHT, FULL) based on the question\n"
+            schema_text += "- Consider using table aliases for clarity in complex queries\n"
+            schema_text += "- When comparing data across tables, use UNION or JOIN as appropriate\n\n"
+        
         return schema_text
     
     def generate_sql(self, question):
@@ -97,6 +105,9 @@ CRITICAL RULES:
 8. Use proper JOIN syntax when needed
 9. Always end queries with semicolon
 10. Do not include any text before or after the SQL query
+11. For multiple tables, use appropriate JOINs based on common columns
+12. When comparing data across tables, use UNION or JOIN as appropriate
+13. Use table aliases (e.g., 's' for sales, 'e' for employees) for clarity in complex queries
 
 {schema}
 

@@ -57,16 +57,18 @@ st.markdown("""
 
 # Initialize session state
 if 'uploaded_data' not in st.session_state:
-    st.session_state.uploaded_data = None
+    st.session_state.uploaded_data = {}
 if 'sql_agent' not in st.session_state:
     st.session_state.sql_agent = None
 if 'database_path' not in st.session_state:
     st.session_state.database_path = None
-if 'table_name' not in st.session_state:
-    st.session_state.table_name = None
+if 'table_names' not in st.session_state:
+    st.session_state.table_names = {}
+if 'all_tables_info' not in st.session_state:
+    st.session_state.all_tables_info = {}
 
-def create_database_from_excel(df, table_name):
-    """Create SQLite database from Excel data"""
+def create_database_from_excel_files(dataframes_dict):
+    """Create SQLite database from multiple Excel files"""
     # Create a unique database file
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     db_path = f"temp_database_{timestamp}.db"
@@ -74,29 +76,64 @@ def create_database_from_excel(df, table_name):
     # Create SQLite engine
     engine = create_engine(f'sqlite:///{db_path}')
     
-    # Write DataFrame to SQL
-    df.to_sql(table_name, engine, if_exists='replace', index=False)
+    # Write all DataFrames to SQL
+    for table_name, df in dataframes_dict.items():
+        df.to_sql(table_name, engine, if_exists='replace', index=False)
     
     return db_path, engine
 
-def display_data_preview(df):
-    """Display data preview with statistics"""
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        st.subheader("📋 Data Preview")
-        st.dataframe(df.head(10), use_container_width=True)
-    
-    with col2:
-        st.subheader("📊 Data Statistics")
-        st.write(f"**Rows:** {len(df)}")
-        st.write(f"**Columns:** {len(df.columns)}")
-        st.write(f"**Memory Usage:** {df.memory_usage(deep=True).sum() / 1024:.2f} KB")
+def create_database_from_single_excel(df, table_name):
+    """Create SQLite database from single Excel file (for backward compatibility)"""
+    return create_database_from_excel_files({table_name: df})
+
+def display_data_preview(dataframes_dict):
+    """Display data preview with statistics for multiple files"""
+    if len(dataframes_dict) == 1:
+        # Single file - show detailed preview
+        table_name, df = list(dataframes_dict.items())[0]
+        col1, col2 = st.columns(2)
         
-        # Column types
-        st.write("**Column Types:**")
-        for col, dtype in df.dtypes.items():
-            st.write(f"- {col}: {dtype}")
+        with col1:
+            st.subheader(f"📋 Data Preview - {table_name}")
+            st.dataframe(df.head(10), use_container_width=True)
+        
+        with col2:
+            st.subheader("📊 Data Statistics")
+            st.write(f"**Rows:** {len(df)}")
+            st.write(f"**Columns:** {len(df.columns)}")
+            st.write(f"**Memory Usage:** {df.memory_usage(deep=True).sum() / 1024:.2f} KB")
+            
+            # Column types
+            st.write("**Column Types:**")
+            for col, dtype in df.dtypes.items():
+                st.write(f"- {col}: {dtype}")
+    else:
+        # Multiple files - show summary
+        st.subheader("📊 Multiple Files Summary")
+        
+        # Create tabs for each file
+        tabs = st.tabs([f"📁 {name}" for name in dataframes_dict.keys()])
+        
+        for i, (table_name, df) in enumerate(dataframes_dict.items()):
+            with tabs[i]:
+                col1, col2 = st.columns(2)
+                
+                with col1:
+                    st.subheader(f"📋 Preview - {table_name}")
+                    st.dataframe(df.head(5), use_container_width=True)
+                
+                with col2:
+                    st.subheader("📊 Statistics")
+                    st.write(f"**Rows:** {len(df)}")
+                    st.write(f"**Columns:** {len(df.columns)}")
+                    st.write(f"**Memory Usage:** {df.memory_usage(deep=True).sum() / 1024:.2f} KB")
+                    
+                    # Show first few column types
+                    st.write("**Column Types:**")
+                    for col, dtype in list(df.dtypes.items())[:5]:
+                        st.write(f"- {col}: {dtype}")
+                    if len(df.columns) > 5:
+                        st.write(f"- ... and {len(df.columns) - 5} more columns")
 
 def main():
     # Header
@@ -150,70 +187,106 @@ def main():
     with col1:
         # File upload section
         st.markdown('<div class="upload-section">', unsafe_allow_html=True)
-        st.header("📁 Upload Excel File")
+        st.header("📁 Upload Excel Files")
         
-        uploaded_file = st.file_uploader(
-            "Choose an Excel file",
-            type=['xlsx', 'xls'],
-            help="Upload your Excel file to start querying"
+        # Multiple file uploader
+        uploaded_files = st.file_uploader(
+            "Choose Excel files (you can select multiple files)",
+            type=['xlsx', 'xls', 'csv'],
+            accept_multiple_files=True,
+            help="Upload one or more Excel/CSV files to start querying"
         )
         
-        if uploaded_file is not None:
+        if uploaded_files:
             try:
-                # Read Excel file
-                df = pd.read_excel(uploaded_file)
-                st.session_state.uploaded_data = df
+                dataframes_dict = {}
+                table_names = {}
                 
-                # Get table name from file
-                table_name = uploaded_file.name.split('.')[0].replace(' ', '_').lower()
-                st.session_state.table_name = table_name
+                for uploaded_file in uploaded_files:
+                    # Read file
+                    if uploaded_file.name.endswith('.csv'):
+                        df = pd.read_csv(uploaded_file)
+                    else:
+                        df = pd.read_excel(uploaded_file)
+                    
+                    # Get table name from file
+                    table_name = uploaded_file.name.split('.')[0].replace(' ', '_').lower()
+                    table_names[uploaded_file.name] = table_name
+                    dataframes_dict[table_name] = df
                 
-                # Create database
-                db_path, engine = create_database_from_excel(df, table_name)
+                # Store in session state
+                st.session_state.uploaded_data = dataframes_dict
+                st.session_state.table_names = table_names
+                
+                # Create database with all files
+                db_path, engine = create_database_from_excel_files(dataframes_dict)
                 st.session_state.database_path = db_path
                 
                 # Initialize SQL Agent
                 if api_key:
                     st.session_state.sql_agent = SQLAgent(db_path, api_key)
                 
-                st.success(f"✅ File uploaded successfully! Table name: `{table_name}`")
+                # Show success message
+                if len(uploaded_files) == 1:
+                    st.success(f"✅ File uploaded successfully! Table name: `{list(table_names.values())[0]}`")
+                else:
+                    st.success(f"✅ {len(uploaded_files)} files uploaded successfully!")
+                    st.info(f"📋 Tables: {', '.join([f'`{name}`' for name in table_names.values()])}")
                 
                 # Display data preview
-                display_data_preview(df)
+                display_data_preview(dataframes_dict)
                 
             except Exception as e:
-                st.error(f"❌ Error reading file: {str(e)}")
+                st.error(f"❌ Error reading files: {str(e)}")
         
         st.markdown('</div>', unsafe_allow_html=True)
     
     with col2:
         # Quick stats
-        if st.session_state.uploaded_data is not None:
+        if st.session_state.uploaded_data:
             st.header("📈 Quick Stats")
-            df = st.session_state.uploaded_data
             
-            # Basic statistics
-            st.metric("Total Rows", len(df))
-            st.metric("Total Columns", len(df.columns))
-            
-            # Numeric columns summary
-            numeric_cols = df.select_dtypes(include=['number']).columns
-            if len(numeric_cols) > 0:
-                st.subheader("Numeric Columns")
-                for col in numeric_cols[:3]:  # Show first 3
-                    st.metric(f"Avg {col}", f"{df[col].mean():.2f}")
+            if len(st.session_state.uploaded_data) == 1:
+                # Single file stats
+                df = list(st.session_state.uploaded_data.values())[0]
+                st.metric("Total Rows", len(df))
+                st.metric("Total Columns", len(df.columns))
+                
+                # Numeric columns summary
+                numeric_cols = df.select_dtypes(include=['number']).columns
+                if len(numeric_cols) > 0:
+                    st.subheader("Numeric Columns")
+                    for col in numeric_cols[:3]:  # Show first 3
+                        st.metric(f"Avg {col}", f"{df[col].mean():.2f}")
+            else:
+                # Multiple files stats
+                total_rows = sum(len(df) for df in st.session_state.uploaded_data.values())
+                total_cols = sum(len(df.columns) for df in st.session_state.uploaded_data.values())
+                st.metric("Total Files", len(st.session_state.uploaded_data))
+                st.metric("Total Rows", total_rows)
+                st.metric("Total Columns", total_cols)
+                
+                # Show table names
+                st.subheader("📋 Tables")
+                for table_name in st.session_state.uploaded_data.keys():
+                    st.write(f"• {table_name}")
     
     # Question and query section
-    if st.session_state.uploaded_data is not None and st.session_state.sql_agent is not None:
+    if st.session_state.uploaded_data and st.session_state.sql_agent is not None:
         st.markdown('<div class="question-section">', unsafe_allow_html=True)
         st.header("❓ Ask Questions About Your Data")
         
         # Question input
         question = st.text_area(
             "Enter your question:",
-            placeholder="e.g., Show me the top 10 sales by region",
+            placeholder="e.g., Show me the top 10 sales by region, or 'Compare sales between employees and customers'",
             height=100
         )
+        
+        # Show available tables for reference
+        if len(st.session_state.uploaded_data) > 1:
+            st.info(f"📋 Available tables: {', '.join([f'`{name}`' for name in st.session_state.uploaded_data.keys()])}")
+            st.info("💡 You can ask questions that span across multiple tables using JOINs!")
         
         col1, col2 = st.columns([1, 1])
         
@@ -303,13 +376,28 @@ def main():
             st.markdown('<div class="result-section">', unsafe_allow_html=True)
             st.header("💡 Sample Questions")
             
-            sample_questions = [
-                "Show me the first 10 rows of data",
-                f"What are the unique values in the first column?",
-                "Give me a summary of all numeric columns",
-                "Show me the data types of all columns",
-                "What is the total count of records?"
-            ]
+            sample_questions = []
+            
+            if len(st.session_state.uploaded_data) == 1:
+                # Single table questions
+                table_name = list(st.session_state.uploaded_data.keys())[0]
+                sample_questions = [
+                    f"Show me the first 10 rows from {table_name}",
+                    f"What are the unique values in the first column of {table_name}?",
+                    f"Give me a summary of all numeric columns in {table_name}",
+                    f"Show me the data types of all columns in {table_name}",
+                    f"What is the total count of records in {table_name}?"
+                ]
+            else:
+                # Multiple table questions
+                table_names = list(st.session_state.uploaded_data.keys())
+                sample_questions = [
+                    f"Show me the first 10 rows from {table_names[0]}",
+                    f"Compare data between {table_names[0]} and {table_names[1]}",
+                    f"Find common records between {table_names[0]} and {table_names[1]}",
+                    f"Show me summary statistics for all tables",
+                    f"What is the total count of records across all tables?"
+                ]
             
             for i, sample in enumerate(sample_questions):
                 if st.button(f"Sample {i+1}: {sample}", key=f"sample_{i}"):

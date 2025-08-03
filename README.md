@@ -4,10 +4,11 @@ A powerful web application that allows you to upload Excel files and ask natural
 
 ## ✨ Features
 
-- **📁 Dynamic Excel Upload**: Upload any Excel file (.xlsx, .xls) and automatically convert it to a SQLite database
+- **📁 Multi-File Upload**: Upload multiple Excel/CSV files and automatically convert them to a SQLite database
+- **🔗 Correlated Queries**: Ask questions that span across multiple tables using JOINs and relationships
 - **🤖 AI-Powered SQL Generation**: Use natural language to ask questions about your data
 - **📊 Interactive Data Visualization**: Automatic charts and graphs for your query results
-- **📋 Data Preview & Statistics**: View your data structure and basic statistics
+- **📋 Data Preview & Statistics**: View your data structure and basic statistics for all tables
 - **💾 Export Results**: Download query results as CSV files
 - **🎨 Modern UI**: Beautiful, responsive interface with intuitive design
 - **🔍 Sample Queries**: Get inspiration with pre-built sample questions
@@ -35,7 +36,11 @@ A powerful web application that allows you to upload Excel files and ask natural
 
 3. **Generate sample data (optional)**
    ```bash
-   python sample_data.py
+   # For single table data
+   python create_sample_data.py
+   
+   # For correlated multi-table data
+   python create_correlated_data.py
    ```
 
 4. **Run the application**
@@ -52,18 +57,23 @@ A powerful web application that allows you to upload Excel files and ask natural
 - Enter your Google Gemini API key in the sidebar
 - The application uses Gemini 2.0 Flash for SQL generation
 
-### Step 2: Upload Excel File
-- Drag and drop your Excel file or click to browse
-- Supported formats: `.xlsx`, `.xls`
-- The file will be automatically converted to a SQLite database
+### Step 2: Upload Excel Files
+- Drag and drop one or more Excel/CSV files or click to browse
+- Supported formats: `.xlsx`, `.xls`, `.csv`
+- All files will be automatically converted to tables in a SQLite database
+- You can upload related files (e.g., customers, orders, sales) for correlated queries
 
 ### Step 3: Ask Questions
 - Use natural language to ask questions about your data
-- Examples:
+- For single files:
   - "Show me the top 10 sales by region"
   - "What is the average salary by department?"
   - "Find all employees hired in 2023"
-  - "Calculate total revenue by month"
+- For multiple files (correlated queries):
+  - "Show me sales with customer and employee names"
+  - "Find customers who have both sales and orders"
+  - "Compare sales performance by employee department"
+  - "Show me total revenue by customer city"
 
 ### Step 4: View Results
 - Generated SQL query is displayed with syntax highlighting
@@ -73,23 +83,43 @@ A powerful web application that allows you to upload Excel files and ask natural
 
 ## 🎯 Example Questions
 
-### Sales Data
+### Single Table Queries
+**Sales Data:**
 - "Show me the top 5 products by total sales"
 - "What is the average order value by region?"
 - "Find all orders above $1000"
 - "Calculate monthly sales trends"
 
-### Employee Data
+**Employee Data:**
 - "Show me employees with salary above $80,000"
 - "What is the average age by department?"
 - "Find the highest paid employee in each department"
 - "Show me employees hired in the last year"
 
-### Customer Data
+**Customer Data:**
 - "Which cities have the most customers?"
 - "Show me customers who spent more than $5000"
 - "What is the average order count per customer type?"
 - "Find customers registered in 2023"
+
+### Multi-Table Correlated Queries
+**Customer-Sales Analysis:**
+- "Show me sales with customer and employee names"
+- "Find customers who have both sales and orders"
+- "Show me total revenue by customer city"
+- "Compare sales performance by customer type"
+
+**Employee-Sales Analysis:**
+- "Compare sales performance by employee department"
+- "Find employees who made sales to enterprise customers"
+- "Show me employee sales ranking by total amount"
+- "Calculate average sale amount by employee"
+
+**Cross-Table Analysis:**
+- "Find customers who have orders but no sales"
+- "Show me sales and orders for the same customer"
+- "Compare order status distribution by customer type"
+- "Find the most active customers across all tables"
 
 ## 🏗️ Architecture
 
