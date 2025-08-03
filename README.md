@@ -34,7 +34,28 @@ A powerful web application that allows you to upload Excel files and ask natural
    pip install -r requirements.txt
    ```
 
-3. **Generate sample data (optional)**
+3. **Set up your API key (Choose one method)**
+
+   **Method 1: Automated Setup (Recommended)**
+   ```bash
+   python setup_env.py
+   ```
+   This will securely prompt you for your API key and create the `.env` file.
+
+   **Method 2: Manual Environment Variable**
+   ```bash
+   # Copy the example file
+   cp env_example.txt .env
+   
+   # Edit .env file and add your API key
+   # GEMINI_API_KEY=your_actual_api_key_here
+   ```
+
+   **Method 3: Direct Input**
+   - Run the app and enter your API key in the sidebar
+   - Note: This is less secure and requires re-entry on each session
+
+4. **Generate sample data (optional)**
    ```bash
    # For single table data
    python create_sample_data.py
@@ -43,12 +64,12 @@ A powerful web application that allows you to upload Excel files and ask natural
    python create_correlated_data.py
    ```
 
-4. **Run the application**
+5. **Run the application**
    ```bash
    streamlit run app.py
    ```
 
-5. **Open your browser**
+6. **Open your browser**
    Navigate to `http://localhost:8501`
 
 ## 📖 How to Use
@@ -157,8 +178,14 @@ A powerful web application that allows you to upload Excel files and ask natural
 ### Environment Variables
 Create a `.env` file in the project root:
 ```env
-GOOGLE_API_KEY=your_google_gemini_api_key_here
+GEMINI_API_KEY=your_google_gemini_api_key_here
 ```
+
+**Security Best Practices:**
+- Never commit your `.env` file to version control
+- The `.env` file is already included in `.gitignore`
+- Use environment variables for production deployments
+- Consider using a secrets management service for production
 
 ### Customization Options
 
@@ -194,7 +221,9 @@ Run `python sample_data.py` to generate these files.
 
 1. **Google Gemini API Key Error**
    - Ensure your API key is valid and has sufficient credits
-   - Check if the key is entered correctly in the sidebar
+   - Check if the key is entered correctly in the sidebar or environment variable
+   - Verify the `.env` file is in the project root directory
+   - Make sure the environment variable name is `GEMINI_API_KEY` or `GOOGLE_API_KEY`
 
 2. **File Upload Issues**
    - Verify the Excel file is not corrupted

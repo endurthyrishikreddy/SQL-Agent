@@ -8,6 +8,10 @@ import plotly.graph_objects as go
 from datetime import datetime
 import json
 from sql_agent import SQLAgent
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
 
 # Page configuration
 st.set_page_config(
@@ -144,13 +148,30 @@ def main():
     with st.sidebar:
         st.header("⚙️ Configuration")
         
-        # API Key input
-        api_key = st.text_input("Google Gemini API Key", type="password", help="Enter your Google Gemini API key", value=st.session_state.get('api_key', ''))
+        # Check for environment variable first
+        env_api_key = os.getenv('GEMINI_API_KEY') or os.getenv('GOOGLE_API_KEY')
         
-        if api_key:
-            st.success("✅ API Key configured")
+        if env_api_key:
+            # Use environment variable if available
+            api_key = env_api_key
+            st.success("✅ API Key loaded from environment")
+            st.info("🔒 API key is securely stored in environment variables")
         else:
-            st.warning("⚠️ Please enter your Google Gemini API key")
+            # Fallback to user input
+            api_key = st.text_input(
+                "Google Gemini API Key", 
+                type="password", 
+                help="Enter your Google Gemini API key (or set GEMINI_API_KEY environment variable)",
+                value=st.session_state.get('api_key', '')
+            )
+            
+            if api_key:
+                st.success("✅ API Key configured")
+                # Store in session state for this session only
+                st.session_state.api_key = api_key
+            else:
+                st.warning("⚠️ Please enter your Google Gemini API key")
+                st.info("💡 Tip: Set GEMINI_API_KEY environment variable for automatic loading")
         
         st.markdown("---")
         
@@ -164,10 +185,14 @@ def main():
         
         st.markdown("---")
         
-        # Pre-configured API key
-        if st.button("🔑 Use Provided API Key"):
-            st.session_state.api_key = "AIzaSyAOahaYB1qof3ZQLdy7Nhv2amJfVjFxRjI"
-            st.success("✅ Using provided Gemini API key")
+        # Security info
+        st.header("🔒 Security")
+        st.markdown("""
+        **For Production:**
+        - Set `GEMINI_API_KEY` environment variable
+        - Never commit API keys to version control
+        - Use `.env` file for local development
+        """)
         
         st.markdown("---")
         
