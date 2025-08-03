@@ -12,7 +12,7 @@ def test_gemini_connection():
     print("🧪 Testing Gemini API Connection...")
     
     # Your API key
-    api_key = "AIzaSyAOahaYB1qof3ZQLdy7Nhv2amJfVjFxRjI"
+    api_key = ""
     
     try:
         # Initialize Gemini model
